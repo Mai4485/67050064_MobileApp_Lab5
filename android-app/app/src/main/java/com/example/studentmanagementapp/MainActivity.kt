@@ -6,6 +6,8 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
@@ -107,7 +109,8 @@ fun StudentManagementApp(
             arguments = listOf(navArgument("studentId") { type = NavType.IntType })
         ) { backStackEntry ->
             val studentId = backStackEntry.arguments?.getInt("studentId") ?: -1
-            val student = viewModel.students.find { it.id == studentId }
+            val students by viewModel.students.collectAsState()
+            val student = students.find { it.id == studentId }
 
             if (student != null) {
                 StudentDetailScreen(
@@ -127,7 +130,8 @@ fun StudentManagementApp(
             arguments = listOf(navArgument("studentId") { type = NavType.IntType })
         ) { backStackEntry ->
             val studentId = backStackEntry.arguments?.getInt("studentId") ?: -1
-            val student = viewModel.students.find { it.id == studentId }
+            val students by viewModel.students.collectAsState()
+            val student = students.find { it.id == studentId }
 
             if (student != null) {
                 AddEditStudentScreen(

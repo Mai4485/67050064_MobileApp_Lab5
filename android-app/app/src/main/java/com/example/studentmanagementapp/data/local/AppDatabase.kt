@@ -12,7 +12,7 @@ import kotlinx.coroutines.launch
 
 @Database(
     entities = [Student::class],
-    version = 1
+    version = 2
 )
 abstract class AppDatabase : RoomDatabase() {
 
@@ -29,6 +29,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "student_database"
                 )
+                    .fallbackToDestructiveMigration()
                     .addCallback(object : RoomDatabase.Callback() {
                         override fun onCreate(db: SupportSQLiteDatabase) {
                             super.onCreate(db)
@@ -38,21 +39,24 @@ abstract class AppDatabase : RoomDatabase() {
                                     Student(
                                         studentCode = "65010001",
                                         name = "Somchai",
-                                        major = "Computer Science"
+                                        major = "Computer Science",
+                                        syncStatus = "SYNCED"
                                     )
                                 )
                                 dao.insertStudent(
                                     Student(
                                         studentCode = "65010002",
                                         name = "Suda",
-                                        major = "Information Technology"
+                                        major = "Information Technology",
+                                        syncStatus = "SYNCED"
                                     )
                                 )
                                 dao.insertStudent(
                                     Student(
                                         studentCode = "65010003",
                                         name = "Mana",
-                                        major = "Digital Technology"
+                                        major = "Digital Technology",
+                                        syncStatus = "SYNCED"
                                     )
                                 )
                             }

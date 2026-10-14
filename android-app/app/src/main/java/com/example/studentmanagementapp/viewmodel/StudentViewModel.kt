@@ -7,14 +7,21 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.studentmanagementapp.data.repository.StudentRepository
 import com.example.studentmanagementapp.model.Student
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class StudentViewModel(
     private val repository: StudentRepository
 ) : ViewModel() {
 
-    var students by mutableStateOf<List<Student>>(emptyList())
-        private set
+    val students: StateFlow<List<Student>> = repository.observeStudents()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
 
     var isLoading by mutableStateOf(false)
         private set
@@ -28,39 +35,31 @@ class StudentViewModel(
     var searchQuery by mutableStateOf("")
         private set
 
-    val filteredStudents: List<Student>
-        get() = if (searchQuery.isBlank()) {
-            students
-        } else {
-            students.filter {
-                it.studentCode.contains(searchQuery, ignoreCase = true) ||
-                        it.name.contains(searchQuery, ignoreCase = true) ||
-                        it.major.contains(searchQuery, ignoreCase = true)
-            }
-        }
-
     fun loadStudents() {
         viewModelScope.launch {
             isLoading = true
             errorMessage = null
             try {
-                val result = repository.getStudents()
-                students = result.students
-                isOnline = result.isFromNetwork
+                repository.refreshFromServer()
+                isOnline = true
             } catch (e: Exception) {
-                errorMessage = "ไม่สามารถโหลดข้อมูลได้"
+                isOnline = false
+                errorMessage = "ไม่สามารถเชื่อมต่อ Server ได้ กำลังแสดงข้อมูลที่บันทึกไว้ในเครื่อง"
             } finally {
                 isLoading = false
             }
         }
     }
 
+    fun syncStudents() {
+        viewModelScope.launch {
+            repository.syncPending()
+        }
+    }
+
     fun addStudent(studentCode: String, name: String, major: String) {
         viewModelScope.launch {
-            repository.addStudent(
-                Student(studentCode = studentCode, name = name, major = major)
-            )
-            students = repository.getLocalStudents()
+            repository.addStudent(studentCode, name, major)
         }
     }
 
@@ -69,18 +68,28 @@ class StudentViewModel(
             repository.updateStudent(
                 original.copy(studentCode = studentCode, name = name, major = major)
             )
-            students = repository.getLocalStudents()
         }
     }
 
     fun deleteStudent(student: Student) {
         viewModelScope.launch {
             repository.deleteStudent(student)
-            students = repository.getLocalStudents()
         }
     }
 
     fun onSearchQueryChange(query: String) {
         searchQuery = query
+    }
+
+    fun filterStudents(students: List<Student>): List<Student> {
+        return if (searchQuery.isBlank()) {
+            students
+        } else {
+            students.filter {
+                it.studentCode.contains(searchQuery, ignoreCase = true) ||
+                        it.name.contains(searchQuery, ignoreCase = true) ||
+                        it.major.contains(searchQuery, ignoreCase = true)
+            }
+        }
     }
 }

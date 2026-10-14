@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -16,6 +17,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -29,6 +31,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -43,6 +47,9 @@ fun StudentListScreen(
     onStudentClick: (Student) -> Unit,
     onLogout: () -> Unit
 ) {
+    val students by viewModel.students.collectAsState()
+    val filteredStudents = viewModel.filterStudents(students)
+
     LaunchedEffect(Unit) {
         viewModel.loadStudents()
     }
@@ -52,6 +59,12 @@ fun StudentListScreen(
             TopAppBar(
                 title = { Text("Student Management") },
                 actions = {
+                    IconButton(onClick = { viewModel.syncStudents() }) {
+                        Icon(
+                            imageVector = Icons.Filled.Sync,
+                            contentDescription = "Sync Now"
+                        )
+                    }
                     IconButton(onClick = { viewModel.loadStudents() }) {
                         Icon(
                             imageVector = Icons.Filled.Refresh,
@@ -92,6 +105,19 @@ fun StudentListScreen(
                     else
                         MaterialTheme.colorScheme.error
                 )
+
+                if (viewModel.isLoading) {
+                    CircularProgressIndicator(modifier = Modifier.size(16.dp))
+                }
+            }
+
+            if (viewModel.errorMessage != null) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = viewModel.errorMessage ?: "",
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall
+                )
             }
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -105,29 +131,14 @@ fun StudentListScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            when {
-                viewModel.isLoading -> {
-                    CircularProgressIndicator()
-                }
-
-                viewModel.errorMessage != null -> {
-                    Text(
-                        text = viewModel.errorMessage ?: "",
-                        color = MaterialTheme.colorScheme.error
+            LazyColumn {
+                items(filteredStudents) { student ->
+                    StudentRow(
+                        student = student,
+                        onClick = { onStudentClick(student) },
+                        onDelete = { viewModel.deleteStudent(student) }
                     )
-                }
-
-                else -> {
-                    LazyColumn {
-                        items(viewModel.filteredStudents) { student ->
-                            StudentRow(
-                                student = student,
-                                onClick = { onStudentClick(student) },
-                                onDelete = { viewModel.deleteStudent(student) }
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                        }
-                    }
+                    Spacer(modifier = Modifier.height(8.dp))
                 }
             }
         }
@@ -157,6 +168,15 @@ private fun StudentRow(
                 Text(
                     text = student.major,
                     style = MaterialTheme.typography.bodySmall
+                )
+                Text(
+                    text = "Sync: ${student.syncStatus}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = when (student.syncStatus) {
+                        "SYNCED" -> MaterialTheme.colorScheme.primary
+                        "FAILED" -> MaterialTheme.colorScheme.error
+                        else -> MaterialTheme.colorScheme.secondary
+                    }
                 )
             }
 

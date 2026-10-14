@@ -1,6 +1,5 @@
 package com.example.studentmanagementapp.data.remote
 
-import com.example.studentmanagementapp.model.Student
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
@@ -10,13 +9,13 @@ import retrofit2.http.Path
 
 interface StudentApi {
     @GET("students")
-    suspend fun getStudents(): List<Student>
+    suspend fun getStudents(): List<StudentDto>
 
     @POST("students")
-    suspend fun createStudent(@Body student: Student): Student
+    suspend fun createStudent(@Body student: StudentRequest): StudentDto
 
     @PUT("students/{id}")
-    suspend fun updateStudent(@Path("id") id: Int, @Body student: Student): Student
+    suspend fun updateStudent(@Path("id") id: Int, @Body student: StudentRequest): StudentDto
 
     @DELETE("students/{id}")
     suspend fun deleteStudent(@Path("id") id: Int)
