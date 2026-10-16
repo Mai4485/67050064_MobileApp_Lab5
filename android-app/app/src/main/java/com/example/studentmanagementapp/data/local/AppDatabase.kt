@@ -5,13 +5,12 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
-import com.example.studentmanagementapp.model.Student
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 @Database(
-    entities = [Student::class],
+    entities = [StudentEntity::class],
     version = 2
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -36,7 +35,7 @@ abstract class AppDatabase : RoomDatabase() {
                             CoroutineScope(Dispatchers.IO).launch {
                                 val dao = getDatabase(context.applicationContext).studentDao()
                                 dao.insertStudent(
-                                    Student(
+                                    StudentEntity(
                                         studentCode = "65010001",
                                         name = "Somchai",
                                         major = "Computer Science",
@@ -44,7 +43,7 @@ abstract class AppDatabase : RoomDatabase() {
                                     )
                                 )
                                 dao.insertStudent(
-                                    Student(
+                                    StudentEntity(
                                         studentCode = "65010002",
                                         name = "Suda",
                                         major = "Information Technology",
@@ -52,7 +51,7 @@ abstract class AppDatabase : RoomDatabase() {
                                     )
                                 )
                                 dao.insertStudent(
-                                    Student(
+                                    StudentEntity(
                                         studentCode = "65010003",
                                         name = "Mana",
                                         major = "Digital Technology",

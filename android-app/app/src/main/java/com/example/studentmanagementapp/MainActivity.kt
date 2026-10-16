@@ -9,46 +9,41 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.example.studentmanagementapp.data.local.AppDatabase
-import com.example.studentmanagementapp.data.remote.RetrofitClient
 import com.example.studentmanagementapp.data.remote.TokenStorage
-import com.example.studentmanagementapp.data.repository.StudentRepository
 import com.example.studentmanagementapp.ui.AddEditStudentScreen
 import com.example.studentmanagementapp.ui.StudentDetailScreen
 import com.example.studentmanagementapp.ui.StudentListScreen
 import com.example.studentmanagementapp.ui.login.LoginScreen
 import com.example.studentmanagementapp.ui.login.LoginViewModel
-import com.example.studentmanagementapp.ui.login.LoginViewModelFactory
 import com.example.studentmanagementapp.ui.theme.StudentManagementAppTheme
 import com.example.studentmanagementapp.viewmodel.StudentViewModel
-import com.example.studentmanagementapp.viewmodel.StudentViewModelFactory
+import com.example.studentmanagementapp.worker.SyncScheduler
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    @Inject
+    lateinit var tokenStorage: TokenStorage
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val tokenStorage = TokenStorage(applicationContext)
-        val authApi = RetrofitClient.authApi(tokenStorage)
-        val studentApi = RetrofitClient.studentApi(tokenStorage)
-
-        val dao = AppDatabase.getDatabase(applicationContext).studentDao()
-        val repository = StudentRepository(dao, studentApi)
-        val studentFactory = StudentViewModelFactory(repository)
-        val loginFactory = LoginViewModelFactory(authApi, tokenStorage)
+        SyncScheduler.schedulePeriodicSync(this)
 
         setContent {
             StudentManagementAppTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
-                    val viewModel: StudentViewModel = viewModel(factory = studentFactory)
+                    val viewModel: StudentViewModel = hiltViewModel()
                     StudentManagementApp(
                         viewModel = viewModel,
-                        loginFactory = loginFactory,
                         tokenStorage = tokenStorage
                     )
                 }
@@ -60,7 +55,6 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun StudentManagementApp(
     viewModel: StudentViewModel,
-    loginFactory: LoginViewModelFactory,
     tokenStorage: TokenStorage
 ) {
     val navController = rememberNavController()
@@ -69,7 +63,7 @@ fun StudentManagementApp(
     NavHost(navController = navController, startDestination = startDestination) {
 
         composable("login") {
-            val loginViewModel: LoginViewModel = viewModel(factory = loginFactory)
+            val loginViewModel: LoginViewModel = hiltViewModel()
             LoginScreen(
                 viewModel = loginViewModel,
                 onLoginSuccess = {

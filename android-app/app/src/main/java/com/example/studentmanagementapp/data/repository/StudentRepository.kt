@@ -1,27 +1,28 @@
 package com.example.studentmanagementapp.data.repository
 
 import com.example.studentmanagementapp.data.local.StudentDao
+import com.example.studentmanagementapp.data.local.StudentEntity
 import com.example.studentmanagementapp.data.remote.StudentApi
 import com.example.studentmanagementapp.data.remote.StudentRequest
-import com.example.studentmanagementapp.model.Student
 import kotlinx.coroutines.flow.Flow
+import javax.inject.Inject
 
-class StudentRepository(
+class StudentRepository @Inject constructor(
     private val dao: StudentDao,
     private val api: StudentApi
 ) {
-    fun observeStudents(): Flow<List<Student>> {
+    fun observeStudents(): Flow<List<StudentEntity>> {
         return dao.observeStudents()
     }
 
-    suspend fun getLocalStudents(): List<Student> {
+    suspend fun getLocalStudents(): List<StudentEntity> {
         return dao.getAllStudents()
     }
 
     suspend fun refreshFromServer() {
         val remoteStudents = api.getStudents()
         val entities = remoteStudents.map { dto ->
-            Student(
+            StudentEntity(
                 serverId = dto.id,
                 studentCode = dto.studentCode,
                 name = dto.name,
@@ -35,7 +36,7 @@ class StudentRepository(
 
     suspend fun addStudent(studentCode: String, name: String, major: String) {
         dao.insertStudent(
-            Student(
+            StudentEntity(
                 studentCode = studentCode,
                 name = name,
                 major = major,
@@ -47,27 +48,23 @@ class StudentRepository(
     suspend fun syncPending() {
         val pending = dao.getPendingStudents()
         for (student in pending) {
-            try {
-                val response = api.createStudent(
-                    StudentRequest(
-                        studentCode = student.studentCode,
-                        name = student.name,
-                        major = student.major
-                    )
+            val response = api.createStudent(
+                StudentRequest(
+                    studentCode = student.studentCode,
+                    name = student.name,
+                    major = student.major
                 )
-                dao.updateStudent(
-                    student.copy(
-                        serverId = response.id,
-                        syncStatus = "SYNCED"
-                    )
+            )
+            dao.updateStudent(
+                student.copy(
+                    serverId = response.id,
+                    syncStatus = "SYNCED"
                 )
-            } catch (e: Exception) {
-                dao.updateStudent(student.copy(syncStatus = "FAILED"))
-            }
+            )
         }
     }
 
-    suspend fun updateStudent(student: Student) {
+    suspend fun updateStudent(student: StudentEntity) {
         val serverId = student.serverId
         try {
             if (serverId != null) {
@@ -88,7 +85,7 @@ class StudentRepository(
         }
     }
 
-    suspend fun deleteStudent(student: Student) {
+    suspend fun deleteStudent(student: StudentEntity) {
         try {
             val serverId = student.serverId
             if (serverId != null) {

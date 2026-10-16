@@ -5,18 +5,31 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.studentmanagementapp.data.repository.StudentRepository
-import com.example.studentmanagementapp.model.Student
+import com.example.studentmanagementapp.domain.model.Student
+import com.example.studentmanagementapp.domain.usecase.AddStudentUseCase
+import com.example.studentmanagementapp.domain.usecase.DeleteStudentUseCase
+import com.example.studentmanagementapp.domain.usecase.GetStudentsUseCase
+import com.example.studentmanagementapp.domain.usecase.RefreshStudentsUseCase
+import com.example.studentmanagementapp.domain.usecase.SyncStudentsUseCase
+import com.example.studentmanagementapp.domain.usecase.UpdateStudentUseCase
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class StudentViewModel(
-    private val repository: StudentRepository
+@HiltViewModel
+class StudentViewModel @Inject constructor(
+    private val getStudentsUseCase: GetStudentsUseCase,
+    private val refreshStudentsUseCase: RefreshStudentsUseCase,
+    private val syncStudentsUseCase: SyncStudentsUseCase,
+    private val addStudentUseCase: AddStudentUseCase,
+    private val updateStudentUseCase: UpdateStudentUseCase,
+    private val deleteStudentUseCase: DeleteStudentUseCase
 ) : ViewModel() {
 
-    val students: StateFlow<List<Student>> = repository.observeStudents()
+    val students: StateFlow<List<Student>> = getStudentsUseCase()
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
@@ -40,7 +53,7 @@ class StudentViewModel(
             isLoading = true
             errorMessage = null
             try {
-                repository.refreshFromServer()
+                refreshStudentsUseCase()
                 isOnline = true
             } catch (e: Exception) {
                 isOnline = false
@@ -53,19 +66,23 @@ class StudentViewModel(
 
     fun syncStudents() {
         viewModelScope.launch {
-            repository.syncPending()
+            try {
+                syncStudentsUseCase()
+            } catch (e: Exception) {
+                errorMessage = "Sync ไม่สำเร็จ ลองใหม่อีกครั้ง"
+            }
         }
     }
 
     fun addStudent(studentCode: String, name: String, major: String) {
         viewModelScope.launch {
-            repository.addStudent(studentCode, name, major)
+            addStudentUseCase(studentCode, name, major)
         }
     }
 
     fun updateStudent(original: Student, studentCode: String, name: String, major: String) {
         viewModelScope.launch {
-            repository.updateStudent(
+            updateStudentUseCase(
                 original.copy(studentCode = studentCode, name = name, major = major)
             )
         }
@@ -73,7 +90,7 @@ class StudentViewModel(
 
     fun deleteStudent(student: Student) {
         viewModelScope.launch {
-            repository.deleteStudent(student)
+            deleteStudentUseCase(student)
         }
     }
 

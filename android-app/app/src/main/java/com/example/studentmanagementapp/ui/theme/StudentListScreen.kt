@@ -18,6 +18,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Sync
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -35,9 +36,11 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import com.example.studentmanagementapp.model.Student
+import com.example.studentmanagementapp.domain.model.Student
 import com.example.studentmanagementapp.viewmodel.StudentViewModel
+import com.example.studentmanagementapp.worker.SyncScheduler
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -47,6 +50,7 @@ fun StudentListScreen(
     onStudentClick: (Student) -> Unit,
     onLogout: () -> Unit
 ) {
+    val context = LocalContext.current
     val students by viewModel.students.collectAsState()
     val filteredStudents = viewModel.filterStudents(students)
 
@@ -128,6 +132,12 @@ fun StudentListScreen(
                 label = { Text("Search student...") },
                 modifier = Modifier.fillMaxWidth()
             )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Button(onClick = { SyncScheduler.syncNow(context) }) {
+                Text("Sync in Background")
+            }
 
             Spacer(modifier = Modifier.height(16.dp))
 

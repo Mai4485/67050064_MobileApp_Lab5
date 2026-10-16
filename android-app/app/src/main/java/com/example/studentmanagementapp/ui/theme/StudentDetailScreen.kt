@@ -17,7 +17,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.example.studentmanagementapp.model.Student
+import com.example.studentmanagementapp.domain.model.Student
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
